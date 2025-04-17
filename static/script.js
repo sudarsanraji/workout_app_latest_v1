@@ -189,51 +189,59 @@ document.addEventListener('DOMContentLoaded', function() {
         timer = setInterval(updateTimer, 1000);
     }
     
-    function updateTimer() {
-        if (isPaused) return;
+   function updateTimer() {
+    if (isPaused) return;
+    
+    timeLeft--;
+    updateTimerDisplay();
+    
+    // Update progress bar
+    const progress = (timeLeft / totalTime) * 100;
+    progressBar.style.width = `${progress}%`;
+    
+    // Play process sound when 5 seconds left
+    if (timeLeft === 5) {
+        processSound.play();
+    }
+    
+    if (timeLeft <= 0) {
+        clearInterval(timer);
         
-        timeLeft--;
-        updateTimerDisplay();
-        
-        // Update progress bar
-        const progress = (timeLeft / totalTime) * 100;
-        progressBar.style.width = `${progress}%`;
-        
-        // Play process sound when 5 seconds left
-        if (timeLeft === 5) {
-            processSound.play();
-        }
-        
-        if (timeLeft <= 0) {
-            clearInterval(timer);
+        if (isSetRestPeriod) {
+            // Move to next set or end workout
+            currentSet++;
+            isSetRestPeriod = false;
             
-            if (isSetRestPeriod) {
-                // Move to next set or end workout
-                currentSet++;
-                isSetRestPeriod = false;
-                
-                if (currentSet > totalSets) {
-                    endWorkout();
-                } else {
-                    currentExerciseIndex = 0;
-                    startExercise();
-                }
-            } else if (isRestPeriod) {
-                // Move to next exercise or set rest
-                isRestPeriod = false;
-                currentExerciseIndex++;
-                
-                if (currentExerciseIndex >= selectedExercises.length) {
+            if (currentSet > totalSets) {
+                endWorkout(); // Skip rest after last set
+            } else {
+                currentExerciseIndex = 0;
+                startExercise();
+            }
+        } else if (isRestPeriod) {
+            // Move to next exercise or set rest
+            isRestPeriod = false;
+            currentExerciseIndex++;
+            
+            if (currentExerciseIndex >= selectedExercises.length) {
+                if (currentSet < totalSets) {
                     startSetRestPeriod();
                 } else {
-                    startExercise();
+                    endWorkout(); // Skip rest after last set
                 }
             } else {
-                // Start rest period after exercise
+                startExercise();
+            }
+        } else {
+            // Start rest period after exercise
+            if (currentExerciseIndex < selectedExercises.length - 1 || currentSet < totalSets) {
                 startRestPeriod();
+            } else {
+                endWorkout(); // Skip rest after last exercise of last set
             }
         }
     }
+} 
     
     function updateTimerDisplay() {
         const minutes = Math.floor(timeLeft / 60);
@@ -259,21 +267,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function endWorkout() {
-        timerDisplay.textContent = '00:00';
-        currentExerciseDisplay.textContent = 'Workout Complete!';
-        setInfoDisplay.textContent = '';
-        progressBar.style.width = '0%';
-        
-        // Play stop sound
-        stopSound.play();
-        
-        // Reset buttons
-        startWorkoutBtn.disabled = false;
-        resetSelectionBtn.disabled = false;
-        pauseTimerBtn.disabled = true;
-        resumeTimerBtn.disabled = true;
-        stopTimerBtn.disabled = true;
-    }
+    timerDisplay.textContent = '00:00';
+    currentExerciseDisplay.textContent = 'Workout Complete!';
+    setInfoDisplay.textContent = '';
+    progressBar.style.width = '0%';
+    
+    // Play stop sound
+    stopSound.play();
+    
+    // Reset buttons
+    startWorkoutBtn.disabled = false;
+    resetSelectionBtn.disabled = false;
+    pauseTimerBtn.disabled = true;
+    resumeTimerBtn.disabled = true;
+    stopTimerBtn.disabled = true;
+    
+    // Reset workout state
+    currentSet = 0;
+    currentExerciseIndex = 0;
+    isRestPeriod = false;
+    isSetRestPeriod = false;
+}
     
     // Tab functionality
     function openTab(tabName, button) {
