@@ -189,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         timer = setInterval(updateTimer, 1000);
     }
     
+   
    function updateTimer() {
     if (isPaused) return;
     
@@ -213,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
             isSetRestPeriod = false;
             
             if (currentSet > totalSets) {
-                endWorkout(); // Skip rest after last set
+                endWorkout();
             } else {
                 currentExerciseIndex = 0;
                 startExercise();
@@ -227,21 +228,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (currentSet < totalSets) {
                     startSetRestPeriod();
                 } else {
-                    endWorkout(); // Skip rest after last set
+                    endWorkout();
                 }
             } else {
                 startExercise();
             }
         } else {
-            // Start rest period after exercise
-            if (currentExerciseIndex < selectedExercises.length - 1 || currentSet < totalSets) {
+            // Start rest period after exercise only if not last exercise of set
+            if (currentExerciseIndex < selectedExercises.length - 1) {
                 startRestPeriod();
             } else {
-                endWorkout(); // Skip rest after last exercise of last set
+                // Last exercise of set - move to set rest or end workout
+                if (currentSet < totalSets) {
+                    startSetRestPeriod();
+                } else {
+                    endWorkout();
+                }
             }
         }
     }
-} 
+}
+   
     
     function updateTimerDisplay() {
         const minutes = Math.floor(timeLeft / 60);
