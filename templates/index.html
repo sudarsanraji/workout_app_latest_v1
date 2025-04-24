@@ -4,126 +4,389 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workout App</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .exercise-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .selected-exercises {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .workout-display {
+            display: none;
+        }
+        .tab-content {
+            padding: 15px;
+            border-left: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            border-radius: 0 0 5px 5px;
+        }
+        .exercise-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Workout App</h1>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Workout App</h1>
         
-        <div class="app-container">
-            <!-- Exercise Selection Panel -->
-            <div class="exercise-panel">
-                <div class="tabs">
-                    <button class="tab-button active" onclick="openTab('kettlebell')">Kettlebell</button>
-                    <button class="tab-button" onclick="openTab('bodyweight')">Bodyweight</button>
-                    <button class="tab-button" onclick="openTab('stretch')">Stretch</button>
-                    <button class="tab-button" onclick="openTab('daily_routines')">Daily Routines</button>
-                </div>
+        <div class="row">
+            <!-- Exercise Selection Column -->
+            <div class="col-md-6">
+                <ul class="nav nav-tabs" id="exerciseTabs" role="tablist">
+                    {% for category in exercises %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if loop.first %}active{% endif %}" 
+                                id="{{ category|lower|replace(' ', '-') }}-tab" 
+                                data-bs-toggle="tab" 
+                                data-bs-target="#{{ category|lower|replace(' ', '-') }}" 
+                                type="button" role="tab">
+                            {{ category }}
+                        </button>
+                    </li>
+                    {% endfor %}
+                </ul>
                 
-                <div id="kettlebell" class="tab-content" style="display:block">
-                    <h3>Kettlebell Exercises</h3>
-                    <div class="exercise-list">
-                        {% for exercise in exercises.kettlebell %}
-                        <label class="exercise-item">
-                            <input type="checkbox" class="exercise-checkbox" value="{{ exercise }}">
-                            {{ exercise }}
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <div id="bodyweight" class="tab-content">
-                    <h3>Bodyweight Exercises</h3>
-                    <div class="exercise-list">
-                        {% for exercise in exercises.bodyweight %}
-                        <label class="exercise-item">
-                            <input type="checkbox" class="exercise-checkbox" value="{{ exercise }}">
-                            {{ exercise }}
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <div id="stretch" class="tab-content">
-                    <h3>Stretch Exercises</h3>
-                    <div class="exercise-list">
-                        {% for exercise in exercises.stretch %}
-                        <label class="exercise-item">
-                            <input type="checkbox" class="exercise-checkbox" value="{{ exercise }}">
-                            {{ exercise }}
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <div id="daily_routines" class="tab-content">
-                    <h3>Daily Routines</h3>
-                    <div class="exercise-list">
-                        {% for routine in exercises.daily_routines %}
-                        <div class="routine-item">
-                            {{ routine }}
+                <div class="tab-content" id="exerciseTabContent">
+                    {% for category, items in exercises.items() %}
+                    <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                         id="{{ category|lower|replace(' ', '-') }}" 
+                         role="tabpanel">
+                        {% if descriptions.get(category) %}
+                        <div class="alert alert-info">
+                            {{ descriptions[category] }}
                         </div>
-                        {% endfor %}
+                        {% endif %}
+                        
+                        <div class="exercise-container">
+                            {% for exercise in items %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input exercise-checkbox" 
+                                       type="checkbox" 
+                                       value="{{ exercise }}" 
+                                       id="ex-{{ loop.index }}">
+                                <label class="form-check-label" for="ex-{{ loop.index }}">
+                                    {{ exercise }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        Workout Settings
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="exerciseDuration" class="form-label">Exercise Duration (seconds)</label>
+                            <input type="number" class="form-control" id="exerciseDuration" value="30">
+                        </div>
+                        <div class="mb-3">
+                            <label for="restBetweenExercises" class="form-label">Rest Between Exercises (seconds)</label>
+                            <input type="number" class="form-control" id="restBetweenExercises" value="15">
+                        </div>
+                        <div class="mb-3">
+                            <label for="restBetweenSets" class="form-label">Rest Between Sets (seconds)</label>
+                            <input type="number" class="form-control" id="restBetweenSets" value="30">
+                        </div>
+                        <div class="mb-3">
+                            <label for="numberOfSets" class="form-label">Number of Sets</label>
+                            <input type="number" class="form-control" id="numberOfSets" value="3">
+                        </div>
                     </div>
                 </div>
                 
-                <div class="settings">
-                    <div class="setting-group">
-                        <label>Exercise Duration (seconds):</label>
-                        <input type="number" id="exercise-duration" value="30" min="5">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        Selected Exercises
                     </div>
-                    <div class="setting-group">
-                        <label>Rest Between Exercises (seconds):</label>
-                        <input type="number" id="exercise-rest" value="15" min="5">
+                    <div class="card-body">
+                        <div class="selected-exercises mb-3" id="selectedExercises">
+                            No exercises selected
+                        </div>
+                        <button class="btn btn-primary me-2" id="startWorkout">Start Workout</button>
+                        <button class="btn btn-secondary" id="resetSelection">Reset Selection</button>
                     </div>
-                    <div class="setting-group">
-                        <label>Rest Between Sets (seconds):</label>
-                        <input type="number" id="set-rest" value="60" min="15">
-                    </div>
-                    <div class="setting-group">
-                        <label>Number of Sets:</label>
-                        <input type="number" id="num-sets" value="3" min="1">
-                    </div>
-                </div>
-                
-                <div class="action-buttons">
-                    <button id="start-workout" class="btn">Start Workout</button>
-                    <button id="reset-selection" class="btn">Reset Selection</button>
                 </div>
             </div>
             
-            <!-- Timer and Selected Exercises Panel -->
-            <div class="timer-panel">
-                <div class="timer-display">
-                    <div id="timer">00:00</div>
-                    <div id="current-exercise">Ready to start</div>
-                    <div id="set-info">Set: 0/0</div>
-                    <div class="progress-container">
-                        <div id="progress-bar"></div>
+            <!-- Workout Timer Column -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        Workout Timer
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="timerDisplay" class="display-4 mb-3">00:00</div>
+                        <div id="currentExercise" class="h4 mb-3">Ready to start</div>
+                        <div id="setInfo" class="h5 mb-3"></div>
+                        <div id="nextExercise" class="h6 text-muted"></div>
+                        
+                        
+                        
+                        <div class="mt-4">
+                            <button id="pauseResumeBtn" class="btn btn-warning me-2" disabled>Pause</button>
+                            <button id="stopBtn" class="btn btn-danger" disabled>Stop</button>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="selected-exercises">
-                    <h3>Selected Exercises</h3>
-                    <div id="selected-list"></div>
-                </div>
-                
-                <div class="timer-controls">
-                    <button id="pause-timer" class="btn" disabled><i class="fas fa-pause"></i> Pause</button>
-                    <button id="resume-timer" class="btn" disabled><i class="fas fa-play"></i> Resume</button>
-                    <button id="stop-timer" class="btn" disabled><i class="fas fa-stop"></i> Stop</button>
-                </div>
+				
+
+				<div class="workout-display" id="workoutDisplay">
+                            <img id="exerciseImage" src="" class="exercise-image" alt="Exercise demonstration">
+                            <div id="exerciseDescription" class="text-muted"></div>
+                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Audio elements for sound alerts -->
-    <audio id="start-sound" src="{{ url_for('static', filename='sounds/start.mp3') }}"></audio>
-    <audio id="process-sound" src="{{ url_for('static', filename='sounds/process.mp3') }}"></audio>
-    <audio id="rest-sound" src="{{ url_for('static', filename='sounds/rest.mp3') }}"></audio>
-    <audio id="stop-sound" src="{{ url_for('static', filename='sounds/stop.mp3') }}"></audio>
-    
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <audio id="startSound" src="{{ url_for('static', filename='sounds/start.mp3') }}"></audio>
+    <audio id="processSound" src="{{ url_for('static', filename='sounds/process.mp3') }}"></audio>
+    <audio id="restSound" src="{{ url_for('static', filename='sounds/rest.mp3') }}"></audio>
+    <audio id="stopSound" src="{{ url_for('static', filename='sounds/stop.mp3') }}"></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elements
+            const exerciseCheckboxes = document.querySelectorAll('.exercise-checkbox');
+            const selectedExercisesDiv = document.getElementById('selectedExercises');
+            const resetSelectionBtn = document.getElementById('resetSelection');
+            const startWorkoutBtn = document.getElementById('startWorkout');
+            const pauseResumeBtn = document.getElementById('pauseResumeBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const timerDisplay = document.getElementById('timerDisplay');
+            const currentExerciseDiv = document.getElementById('currentExercise');
+            const setInfoDiv = document.getElementById('setInfo');
+            const nextExerciseDiv = document.getElementById('nextExercise');
+            const workoutDisplay = document.getElementById('workoutDisplay');
+            const exerciseImage = document.getElementById('exerciseImage');
+            const exerciseDescription = document.getElementById('exerciseDescription');
+            
+            // Audio elements
+            const startSound = document.getElementById('startSound');
+            const processSound = document.getElementById('processSound');
+            const restSound = document.getElementById('restSound');
+            const stopSound = document.getElementById('stopSound');
+            
+            // Workout variables
+            let selectedExercises = [];
+            let workoutInProgress = false;
+            let workoutInterval;
+            let currentTime = 0;
+            let isPaused = false;
+            let currentSet = 1;
+            let currentExerciseIndex = 0;
+            let workoutPlan = [];
+            
+            // Update selected exercises list
+            function updateSelectedExercises() {
+                selectedExercises = [];
+                exerciseCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        selectedExercises.push(checkbox.value);
+                    }
+                });
+                
+                if (selectedExercises.length > 0) {
+                    selectedExercisesDiv.innerHTML = selectedExercises.map(ex => 
+                        `<div class="mb-1">${ex}</div>`
+                    ).join('');
+                } else {
+                    selectedExercisesDiv.textContent = 'No exercises selected';
+                }
+            }
+            
+            // Event listeners for checkboxes
+            exerciseCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedExercises);
+            });
+            
+            // Reset selection
+            resetSelectionBtn.addEventListener('click', function() {
+                exerciseCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                updateSelectedExercises();
+            });
+            
+            // Format time as MM:SS
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // Start workout
+            startWorkoutBtn.addEventListener('click', function() {
+                if (selectedExercises.length === 0) {
+                    alert('Please select at least one exercise');
+                    return;
+                }
+                
+                if (workoutInProgress) return;
+                
+                const exerciseDuration = parseInt(document.getElementById('exerciseDuration').value) || 30;
+                const restBetweenExercises = parseInt(document.getElementById('restBetweenExercises').value) || 15;
+                const restBetweenSets = parseInt(document.getElementById('restBetweenSets').value) || 30;
+                const numberOfSets = parseInt(document.getElementById('numberOfSets').value) || 3;
+                
+                // Create workout plan
+                workoutPlan = [];
+                for (let set = 1; set <= numberOfSets; set++) {
+                    selectedExercises.forEach((exercise, index) => {
+                        // Add exercise
+                        workoutPlan.push({
+                            type: 'exercise',
+                            name: exercise,
+                            duration: exerciseDuration,
+                            set: set
+                        });
+                        
+                        // Add rest after exercise (except for last exercise in set)
+                        if (index < selectedExercises.length - 1) {
+                            workoutPlan.push({
+                                type: 'rest',
+                                name: 'Rest between exercises',
+                                duration: restBetweenExercises,
+                                set: set
+                            });
+                        }
+                    });
+                    
+                    // Add rest between sets (except for last set)
+                    if (set < numberOfSets) {
+                        workoutPlan.push({
+                            type: 'rest',
+                            name: 'Rest between sets',
+                            duration: restBetweenSets,
+                            set: set
+                        });
+                    }
+                }
+                
+                // Start the workout
+                workoutInProgress = true;
+                currentSet = 1;
+                currentExerciseIndex = 0;
+                startWorkoutBtn.disabled = true;
+                pauseResumeBtn.disabled = false;
+                stopBtn.disabled = false;
+                
+                startWorkoutStep();
+            });
+            
+            // Process each workout step
+            function startWorkoutStep() {
+                if (currentExerciseIndex >= workoutPlan.length) {
+                    endWorkout();
+                    return;
+                }
+                
+                const currentStep = workoutPlan[currentExerciseIndex];
+                currentTime = currentStep.duration;
+                
+                // Update display
+                timerDisplay.textContent = formatTime(currentTime);
+                currentExerciseDiv.textContent = currentStep.name;
+                setInfoDiv.textContent = `Set ${currentStep.set} of ${document.getElementById('numberOfSets').value}`;
+                
+                // Show next exercise if available
+                if (currentExerciseIndex < workoutPlan.length - 1) {
+                    const nextStep = workoutPlan[currentExerciseIndex + 1];
+                    if (nextStep.type === 'exercise') {
+                        nextExerciseDiv.textContent = `Next: ${nextStep.name}`;
+                    } else {
+                        nextExerciseDiv.textContent = '';
+                    }
+                } else {
+                    nextExerciseDiv.textContent = '';
+                }
+                
+                // Play appropriate sound
+                if (currentStep.type === 'exercise') {
+                    startSound.play();
+                    
+                    // Show exercise image and description
+                    fetch(`/get_exercise_image/${encodeURIComponent(currentStep.name)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            exerciseImage.src = `/static/images/${data.image}`;
+                            workoutDisplay.style.display = 'block';
+                        });
+                } else {
+                    restSound.play();
+                    workoutDisplay.style.display = 'none';
+                }
+                
+                // Start timer
+                clearInterval(workoutInterval);
+                workoutInterval = setInterval(function() {
+                    if (!isPaused) {
+                        currentTime--;
+                        timerDisplay.textContent = formatTime(currentTime);
+                        
+                        // Play process sound when 5 seconds remain
+                        if (currentTime === 5) {
+                            processSound.play();
+                        }
+                        
+                        if (currentTime <= 0) {
+                            clearInterval(workoutInterval);
+                            currentExerciseIndex++;
+                            setTimeout(startWorkoutStep, 1000); // Brief pause before next step
+                        }
+                    }
+                }, 1000);
+            }
+            
+            // Pause/resume workout
+            pauseResumeBtn.addEventListener('click', function() {
+                isPaused = !isPaused;
+                pauseResumeBtn.textContent = isPaused ? 'Resume' : 'Pause';
+                
+                if (!isPaused && currentTime <= 0) {
+                    // If we paused at the end of a step and now resuming
+                    currentExerciseIndex++;
+                    startWorkoutStep();
+                }
+            });
+            
+            // Stop workout
+            stopBtn.addEventListener('click', endWorkout);
+            
+            // End workout
+            function endWorkout() {
+                clearInterval(workoutInterval);
+                workoutInProgress = false;
+                isPaused = false;
+                
+                timerDisplay.textContent = '00:00';
+                currentExerciseDiv.textContent = 'Workout Complete!';
+                setInfoDiv.textContent = '';
+                nextExerciseDiv.textContent = '';
+                workoutDisplay.style.display = 'none';
+                
+                startWorkoutBtn.disabled = false;
+                pauseResumeBtn.disabled = true;
+                stopBtn.disabled = true;
+                pauseResumeBtn.textContent = 'Pause';
+                
+                stopSound.play();
+            }
+        });
+    </script>
 </body>
 </html>

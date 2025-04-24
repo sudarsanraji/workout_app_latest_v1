@@ -1,5 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     // DOM elements
+	
+	console.log("Available Kettlebell Exercises:", EXERCISES.kettlebell);
+    console.log("Available Bodyweight Exercises:", EXERCISES.bodyweight);
+    console.log("Available Stretch Exercises:", EXERCISES.stretch);
+
     const startWorkoutBtn = document.getElementById('start-workout');
     const resetSelectionBtn = document.getElementById('reset-selection');
     const pauseTimerBtn = document.getElementById('pause-timer');
@@ -10,7 +15,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const setInfoDisplay = document.getElementById('set-info');
     const progressBar = document.getElementById('progress-bar');
     const selectedList = document.getElementById('selected-list');
-    
+    const exerciseImage = document.getElementById('exercise-image');
+
     // Audio elements
     const startSound = document.getElementById('start-sound');
     const processSound = document.getElementById('process-sound');
@@ -110,6 +116,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         updateSelectedExercisesList();
     }
+	
+	async function verifyImageExists(exercise, category) {
+    const cleanName = exercise.toLowerCase().replace(/ /g, '_');
+    const response = await fetch(`/check_image/${category}/${cleanName}`);
+    return response.json();
+}
+	
+async function displayExerciseImage(exercise) {
+    const imgElement = document.getElementById('exercise-image');
+    let categories = [];
+    
+    if (EXERCISES.kettlebell.includes(exercise)) categories.push('kettlebell');
+    if (EXERCISES.bodyweight.includes(exercise)) categories.push('bodyweight');
+    if (EXERCISES.stretch.includes(exercise)) categories.push('stretch');
+    
+    // Try each possible category
+    for (const category of categories) {
+        const cleanName = exercise.toLowerCase().replace(/ /g, '_');
+        const imagePath = `/static/images/${category}/${cleanName}.jpg`;
+        
+        const exists = await verifyImageExists(exercise, category);
+        if (exists) {
+            imgElement.src = imagePath;
+            imgElement.style.display = 'block';
+            return;
+        }
+    }
+    
+    // If no image found
+    imgElement.src = '/static/images/default_exercise.jpg';
+    imgElement.style.display = 'block';
+}	
+	
+	
+	
+	
+	
+	
     
     function startWorkout() {
         if (selectedExercises.length === 0) {
@@ -134,30 +178,75 @@ document.addEventListener('DOMContentLoaded', function() {
         // Start the first exercise
         startExercise();
     }
+	
+	const EXERCISE_IMAGES = {
+    // Kettlebell exercises
+    "Kettlebell Swing": "kettlebell-swing.jpg",
+    "Kettlebell Goblet Squat": "kettlebell-goblet-squat.jpg",
+    "Kettlebell Deadlift": "kettlebell-deadlift.jpg",
+    // Add more kettlebell exercises as needed
     
-    function startExercise() {
-        isRestPeriod = false;
-        const exercise = selectedExercises[currentExerciseIndex];
-        currentExerciseDisplay.textContent = exercise;
-        setInfoDisplay.textContent = `Set: ${currentSet}/${totalSets}`;
-        
-        timeLeft = exerciseDuration;
-        totalTime = exerciseDuration;
-        updateTimerDisplay();
-        progressBar.style.width = '100%';
-        progressBar.style.backgroundColor = '#2ecc71';
-        
-        // Play start sound
-        startSound.play();
-        
-        // Start timer
-        clearInterval(timer);
-        timer = setInterval(updateTimer, 1000);
-    }
+    // Bodyweight exercises
+    "Push-Ups": "push-ups.jpg",
+    "Squats": "squats.jpg",
+    "Lunges": "lunges.jpg",
+    // Add more bodyweight exercises as needed
+    
+    // Stretch exercises
+    "Neck Stretch": "neck-stretch.jpg",
+    "Shoulder Stretch": "shoulder-stretch.jpg",
+    // Add more stretch exercises as needed
+    
+    // Daily routines
+    "Wake Up Early": "wake-up.jpg",
+    "Hydrate": "hydrate.jpg"
+    // Add more daily routines as needed
+};
+
+	
+    
+    // Modified startExercise function with error handling
+function startExercise() {
+    isRestPeriod = false;
+    const exercise = selectedExercises[currentExerciseIndex];
+    currentExerciseDisplay.textContent = exercise;
+    
+    // Handle exercise image
+    const imgElement = document.getElementById('exercise-image');
+    const imagePath = getExerciseImagePath(exercise);
+    
+    // Preload image to verify it exists
+    const testImage = new Image();
+    testImage.src = imagePath;
+    
+    testImage.onload = function() {
+        imgElement.src = imagePath;
+        imgElement.style.display = 'block';
+    };
+    
+    testImage.onerror = function() {
+        imgElement.style.display = 'none';
+        console.warn(`Image not found: ${imagePath}`);
+    };
+    
+    // Rest of the function...
+    setInfoDisplay.textContent = `Set: ${currentSet}/${totalSets}`;
+    timeLeft = exerciseDuration;
+    totalTime = exerciseDuration;
+    updateTimerDisplay();
+    progressBar.style.width = '100%';
+    progressBar.style.backgroundColor = '#2ecc71';
+    
+    startSound.play();
+    clearInterval(timer);
+    timer = setInterval(updateTimer, 1000);
+}
+
     
     function startRestPeriod() {
         isRestPeriod = true;
         currentExerciseDisplay.textContent = 'Rest';
+		    exerciseImage.style.display = 'none';
         timeLeft = exerciseRest;
         totalTime = exerciseRest;
         updateTimerDisplay();
@@ -175,6 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function startSetRestPeriod() {
         isSetRestPeriod = true;
         currentExerciseDisplay.textContent = 'Set Rest';
+		    exerciseImage.style.display = 'none';
         timeLeft = setRest;
         totalTime = setRest;
         updateTimerDisplay();
@@ -278,7 +368,8 @@ document.addEventListener('DOMContentLoaded', function() {
     currentExerciseDisplay.textContent = 'Workout Complete!';
     setInfoDisplay.textContent = '';
     progressBar.style.width = '0%';
-    
+        exerciseImage.style.display = 'none';
+
     // Play stop sound
     stopSound.play();
     
@@ -295,7 +386,27 @@ document.addEventListener('DOMContentLoaded', function() {
     isRestPeriod = false;
     isSetRestPeriod = false;
 }
+   
+function getExerciseImagePath(exerciseName) {
+    // Clean the exercise name for filename
+    const cleanName = exerciseName.toLowerCase()
+        .replace(/ /g, '_')
+        .replace(/'/g, '')
+        .replace(/-/g, '_');
     
+    // Determine category
+    let category = '';
+    if (EXERCISES.kettlebell.includes(exerciseName)) category = 'kettlebell';
+    else if (EXERCISES.bodyweight.includes(exerciseName)) category = 'bodyweight';
+    else if (EXERCISES.stretch.includes(exerciseName)) category = 'stretch';
+    
+    // Return the correct URL path
+    return `/static/images/${category}/${cleanName}.jpg`;
+}
+	
+	
+	
+	
     // Tab functionality
     function openTab(tabName, button) {
         const tabContents = document.getElementsByClassName('tab-content');
